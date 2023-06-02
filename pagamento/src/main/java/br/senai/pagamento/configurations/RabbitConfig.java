@@ -2,6 +2,7 @@ package br.senai.pagamento.configurations;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -20,11 +21,6 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Queue criaFila() {
-        return QueueBuilder.durable("pagamento.concluido").build();
-    }
-
-    @Bean
     public ApplicationListener<ApplicationReadyEvent> inicializaAdmin(RabbitAdmin admin) {
         return event -> admin.initialize();
     }
@@ -39,5 +35,10 @@ public class RabbitConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         return rabbitTemplate;
+    }
+
+    @Bean
+    public TopicExchange topicExchange() {
+        return new TopicExchange("pagamentos.ex");
     }
 }

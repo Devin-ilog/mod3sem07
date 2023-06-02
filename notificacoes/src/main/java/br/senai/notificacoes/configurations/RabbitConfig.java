@@ -1,8 +1,9 @@
-package br.senai.pedido.configurations;
+package br.senai.notificacoes.configurations;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.ExchangeBuilder;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitConfig {
+    private static final String DEAD_LETTER_EXCHANGE_NAME = "pagamentos.dlx";
 
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
@@ -32,7 +34,10 @@ public class RabbitConfig {
 
     @Bean
     public Queue criaFila() {
-        return QueueBuilder.durable("pagamentos.pedido").build();
+        return QueueBuilder
+                .durable("pagamentos.notificacoes")
+                .deadLetterExchange(DEAD_LETTER_EXCHANGE_NAME)
+                .build();
     }
 
     @Bean
@@ -45,7 +50,7 @@ public class RabbitConfig {
         return BindingBuilder
                 .bind(criaFila())
                 .to(topicExchange())
-                .with("pgto.ok");
+                .with("pgto.nok");
     }
 
     @Bean
@@ -56,6 +61,27 @@ public class RabbitConfig {
     @Bean
     public ApplicationListener<ApplicationReadyEvent> inicializaAdmin(RabbitAdmin admin) {
         return event -> admin.initialize();
+    }
+
+    @Bean
+    public FanoutExchange deadLetterExchange() {
+        return ExchangeBuilder
+                .fanoutExchange(DEAD_LETTER_EXCHANGE_NAME)
+                .build();
+    }
+
+    @Bean
+    public Queue deadLetterQueue() {
+        return QueueBuilder
+                .durable("pagamentos.notificacoes-dlq")
+                .build();
+    }
+
+    @Bean
+    public Binding bindDlqToDlx() {
+        return BindingBuilder
+                .bind(deadLetterQueue())
+                .to(deadLetterExchange());
     }
 
 }

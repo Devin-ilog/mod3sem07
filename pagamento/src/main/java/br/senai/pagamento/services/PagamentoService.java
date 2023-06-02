@@ -18,11 +18,17 @@ public class PagamentoService {
         // TODO: converter o pagamentoDto em um obj Pagamento
         // TODO: salvar esse obj Pagamento no repository/DB
 
+        // Message message = new Message(("Cadastrado novo pagamento com id: " + pagamentoDto.getId()).getBytes());
+
         pagamentoDto.setId(incrementaId());
         System.out.println("pagamento cadastrado com sucesso! id: " + pagamentoDto.getId());
+        String routingKey = "pgto.nok";
 
-        // Message message = new Message(("Cadastrado novo pagamento com id: " + pagamentoDto.getId()).getBytes());
-        rabbitTemplate.convertAndSend("pagamento.concluido", pagamentoDto);
+        if ("SUCESSO".equals(pagamentoDto.getStatus())) {
+            routingKey = "pgto.ok";
+        }
+
+        rabbitTemplate.convertAndSend("pagamentos.ex", routingKey, pagamentoDto);
 
         return pagamentoDto;
     }
